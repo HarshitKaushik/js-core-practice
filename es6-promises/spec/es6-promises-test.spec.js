@@ -153,6 +153,7 @@ it('values returned inside .then()/.catch() callbacks are provided to the next c
   }, 1);
 });
 
+// todo - This is a little doubtful right now. Will come back to it later.
 it('you can use Promise.resolve() to wrap values or promises'
   , (done) => {
     function iMayReturnAPromise() {
@@ -161,19 +162,37 @@ it('you can use Promise.resolve() to wrap values or promises'
     Promise.resolve(iMayReturnAPromise()).then(done);
   });
 
-it('you can use Promise.resolve() to execute something just after'
-  , (done) => {
-    let arr = [];
-    Promise.resolve().then(() => arr.push(2));
-    arr.push(1);
-    setTimeout(() => {
-      expect(arr).toEqual([1, 2]);
-      done();
-    }, 1);
+// 1. Understand that both .then() success and fail methods are executed asynchronously
+// 2. The executor function is executed synchronously and is executed even before the object is returned
+// Output of below test
+// test begins
+// below the promise as code runs synchronously
+// Inside the promise.then() method handler
+// [1, 2]
+// Inside the timeout method
+// [1, 2]
+it('you can use Promise.resolve() to execute something just after', (done) => {
+  console.log('test begins');
+  let arr = [];
+  Promise.resolve().then(() => {
+    arr.push(2);
+    console.log('Inside the promise .then() method handler');
+    console.log(arr);
   });
+  console.log('below the promise as code runs synchronously');
+  arr.push(1);
+  setTimeout(() => {
+    console.log('Inside the timeout method');
+    console.log(arr);
+    expect(arr).toEqual([1, 2]);
+    done();
+  }, 1);
+});
+
 /** @see
 https://jakearchibald.com/2015/tasks-microtasks-queues-and-schedules
  **/
+// Understood by the same logic as in the above test
 it('Promise.resolve() is normally executed before setTimeout(.., 0)'
   , (done) => {
     let arr = [];
@@ -186,10 +205,171 @@ it('Promise.resolve() is normally executed before setTimeout(.., 0)'
       done();
     }, 1);
   });
+
+// Promise.reject() is a wrapper around a rejected promise.
 it('you can create rejected promises', (done) => {
   Promise.reject('reason').catch(done);
 });
+
+// Uncaught (in promise)
 it('pay attention to "Uncaught (in promise) ..."', () => {
   Promise.reject('The error');
   // Outputs in the console Uncaught (in promise) The error
+});
+
+// Chaining promises vs.creating new ones
+// Although new Promise(...) is a way to create a promise, 
+// you should avoid using it.Most of the time, functions / libraries return a promise, so you should chain promises and not create new ones
+
+// The point of promises is to give us back functional composition and error bubbling in the async world.They do this by saying that your functions should return a promise, which can do one of two things:
+
+// Become fulfilled by a value
+// Become rejected with an exception
+// A good read at https://gist.github.com/domenic/3889970
+
+// When your method can be synchronous(simple data transformation), then use synchronous code in that method
+
+it("Don't use new Promise(...), prefer chaining", (done) => {
+  const url = 'https://jsonplaceholder.typicode.com/posts/1';
+
+  function badlyDesignedCustomFetch() {
+    return new Promise((resolve, reject) => {
+      fetch(url).then((response) => {
+        if (response.ok) {
+          resolve(response);
+        } else {
+          reject('Fetch failed');
+        }
+      });
+    });
+  }
+
+  function wellDesignedCustomFetch() {
+    return fetch(url).then((response) => {
+      if (!response.ok) {
+        return Promise.reject('Fetch failed');
+      }
+      return (response);
+    });
+  }
+
+  // Promise.all
+  // Creates a Promise that is resolved with an array of results when all of the provided Promises resolve, or rejected when any Promise is rejected.
+  // done will not be called if any one of the below two promises in the array fails.
+  Promise.all([
+    badlyDesignedCustomFetch(),
+    wellDesignedCustomFetch()
+  ]).then(done);
+});
+
+// Parallel execution
+// Promise chaining is nice, but what about executing asynchronous operations in parallel ? Below is all you need to know:
+it('you can use Promise.all([...]) to execute promises in parallel'
+  , (done) => {
+    const url = 'https://jsonplaceholder.typicode.com/posts';
+    const p1 = fetch(`${url}/1`);
+    const p2 = fetch(`${url}/2`);
+
+    Promise.all([p1, p2])
+      .then(([res1, res2]) => {
+        return Promise.all([res1.json(), res2.json()])
+      })
+      .then(([post1, post2]) => {
+        expect(post1.id).toBe(1);
+        expect(post2.id).toBe(2);
+      })
+      .then(done);
+  });
+
+// Promise.all([...]) will fail if any of the promises fails
+it('Promise.all([...]) will fail if any of the promises fails'
+  , (done) => {
+    const p1 = Promise.resolve(1);
+    const p2 = Promise.reject('Error');
+    // In this test, as p2 promise is rejected which fulfils the condition of any one promise failing
+    // .catch() is executed.
+    Promise.all([p1, p2])
+      .then(() => {
+        fail('I will not be executed')
+      })
+      .catch(done);
+  });
+
+it("if you don't want Promise.all() to fail, wrap the promises " +
+  "in a promise that will not fail", (done) => {
+    function iMayFail(val) {
+      return Math.random() >= 0.5 ?
+        Promise.resolve(val) :
+        Promise.reject(val);
+    }
+
+    function promiseOr(p, value) {
+      return p.then(res => res, () => value);
+    }
+
+    const p1 = iMayFail(10);
+    const p2 = iMayFail(9);
+
+    // Both promises can fail but are wrapped by a promise each
+
+    Promise.all([promiseOr(p1, null), promiseOr(p2, null)])
+      .then(([val1, val2]) => {
+        expect(val1 === 10 || val1 === null).toBe(true);
+        expect(val2 === 9 || val2 === null).toBe(true);
+      })
+      .catch(() => {
+        fail('I will not be executed')
+      })
+      .then(done);
+  });
+
+it('Promise.race([...]) will resolve as soon as ' +
+  'one of the promises resolves o rejects', (done) => {
+    const timeout =
+      new Promise((resolve, reject) => setTimeout(reject, 100));
+    const data =
+      fetch('https://jsonplaceholder.typicode.com/posts/1');
+
+    Promise.race([data, timeout])
+      .then(() => console.log('Fetch OK'))
+      .catch(() => console.log('Fetch timeout'))
+      .then(done);
+  });
+
+// New await/async syntax
+it('you can use the new await/async syntax', async () => {
+  function timeout(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  const start = Date.now();
+  const delay = 200;
+
+  await timeout(delay + 2); // Just some ms tolerance
+
+  expect(Date.now() - start).toBeGreaterThanOrEqual(delay);
+});
+
+it('an async function returns a promise', (done) => {
+  async function iAmAsync() {
+    return 1;
+  }
+
+  iAmAsync()
+    .then((val) => expect(val).toBe(1))
+    .then(done);
+});
+
+it('await just awaits a promise resolution', async (done) => {
+  await Promise.resolve();
+  done();
+});
+
+it('await will throw an error if the promise fail', async (done) => {
+  try {
+    await Promise.reject();
+    fail('I will not be executed');
+  } catch (err) {
+    done();
+  }
 });
