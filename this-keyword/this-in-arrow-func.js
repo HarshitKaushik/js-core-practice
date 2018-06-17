@@ -26,7 +26,67 @@ function testThisInsideArrowFunctions() {
   // An arrow function can also not be used as a constructor.
   // Hence, we cannot assign properties to this inside an arrow function.
 
+  // So what can arrow functions do in regards to "this" ?
+  // Arrow functions can help us access this within a callback.
+  // To explain how this is done. Take a look at the counter object that I have written below
+
+  /*
+
+  const counter = {
+    count: 0,
+    increase() {
+      setInterval(function () {
+        console.log(++this.count);
+      }, 1000);
+    }
+  }
+  counter.increase();
+
+  Output:
+  NaN
+  NaN
+  NaN
+  NaN
+  NaN
+  NaN
+  NaN
+  NaN
+  ...
+
+  */
+
+  // Running this code using node arrow-func-ex1.js will only give an increase list of NaNs.
+  // This is because this.count is not referring to the counter object. It actually refers to the global object.
+
+  // To make this counter work, lets rewrite it using an arrow function.
+  /*
+
+  const counter = {
+    count: 0,
+    increase () {
+      setInterval (() => {
+        console.log (++this.count);
+      }, 1000);
+    },
+  };
+  counter.increase();
+
+  Output:
+  1
+  2
+  3
+  4
+  5
+  6
+  7
+  ...
+
+  */
+
+
+  // Our callback now uses "this" binding from the increase method, and the counter now works as it should.
   
+
 }
 
 // Export the function to test "this" with arrow functions

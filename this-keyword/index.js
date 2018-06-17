@@ -12,6 +12,7 @@ const thisInsideMethods = require('./this-in-methods');
 const thisWithCallAndApply = require('./call-and-apply');
 const thisWithBind = require('./this-with-bind');
 const thisInsideArrowFunctions = require('./this-in-arrow-func');
+const thisInsideClasses = require('./this-in-classes');
 
 // main file for the this-keyword repo
 
@@ -27,6 +28,7 @@ const basicChoiceMenuSetup = function() {
   console.log(chalk.green('6. "this" call() and apply()'));
   console.log(chalk.green('7. "this" with bind()'));
   console.log(chalk.green('8. "this" inside arrow functions'));
+  console.log(chalk.green('9. "this" inside classes'));
 }
 
 // Set up the this keyword interactive tutorial 
@@ -60,6 +62,9 @@ const setupThisKeywordTutorial = function() {
       break;
     case 8:
       thisInsideArrowFunctions.testThisInsideArrowFunctionsMethod();
+      break;
+    case 9:
+      thisInsideClasses.testThisWithClasses();
       break;
     default:
       console.log(chalk.red('Nothing configured for this choice. Please try again.'));
