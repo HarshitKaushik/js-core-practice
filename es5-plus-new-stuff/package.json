@@ -1,0 +1,16 @@
+{
+  "name": "es5-plus-new-stuff",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "Harshit Kaushik",
+  "license": "ISC",
+  "description": "New stuff is ES5+ JavaScript",
+  "dependencies": {
+    "chalk": "^2.4.1"
+  }
+}
