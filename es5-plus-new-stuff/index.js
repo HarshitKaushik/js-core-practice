@@ -227,3 +227,258 @@ console.log(Object.getOwnPropertyDescriptor(electricCar2, 'discount'));
 // }
 
 // Notice that getters and setters are present in the electricCar2 object for 'discount' property
+
+// 7. Add trailing commas in the function parameters
+console.log(chalk.green('\n7. Add trailing commas in the function parameters\n'));
+
+// This is a minor update that allows us to have trailing commas
+// after the last function parameter.
+
+// Trailing commas in a function call will not throw an error
+
+function add(a,b,) {
+  return (a + b);
+}
+
+const c = add(10,20,);
+console.log('c: ' + c);
+// Prints
+// c: 30
+// Trailing commas in both the function parameters and function invocation
+// do not throw an error.
+
+// 8. Aysnc/Await
+console.log(chalk.green('\n8. Aysnc/Await\n'));
+
+// This, by far, is the most important and most useful feature 
+// if you ask me. Async functions allows us to not deal with 
+// callback hell and make the entire code look simple.
+
+// The async keyword tells the JavaScript compiler to treat the function differently. The compiler pauses
+// whenever it reaches the await keyword within that function.
+// It assumes that the expression after await returns a promise and 
+// waits until the promise is resolved or rejected before moving further.
+
+// In the example below, the getAmount function is calling two asynchronous functions 
+// getUser and getBankBalance. We can do this in promise, but using async await is more elegant and simple.
+
+function getUser(userId) {
+  return new Promise(resolve => {
+      setTimeout(() => {
+        resolve('john');
+      }, 1000);
+  });
+}
+
+function getBankBalance(user) {
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      if (user === 'john') {
+        resolve('$1,000');
+      } else {
+        reject('Unknown user');
+      }
+    }, 1000);
+  });
+}
+
+// Instead of
+// ES2015 Promise
+function getAmount1(userId) {
+  getUser(userId)
+  .then(getBankBalance)
+  .then(amount => {
+    console.log(amount);
+  });
+}
+
+// Use ES2017 async await
+async function getAmount2(userId) {
+  var user = await getUser(userId);
+  var amount = await getBankBalance(user);
+  console.log(amount);
+}
+
+getAmount1(1); 
+// $ 1,000
+
+getAmount2(2);
+// $ 1,000
+
+// Async functions themselves return a Promise
+// If you are waiting for the result from an async function, you need
+// to use Promise’s then syntax to capture its result.
+
+// In the following example, we want to log the result using console.log
+// but not within the doubleAndAdd. So we want to wait and 
+// use then syntax to pass the result to console.log
+
+// Async functions themselves return a Promise object
+
+async function doubleAndAdd(a,b) {
+  a = await doubleAfter1Sec(a);
+  b = await doubleAfter1Sec(b);
+
+  return (a + b);
+}
+
+// Usage
+doubleAndAdd(1,2)
+  .then(c => console.log(c));
+
+function doubleAfter1Sec(param) {
+  return new Promise(resolve => {
+    setTimeout(() => {
+      resolve(param * 2);
+    }, 1000);
+  });
+}
+
+// prints 
+// 6
+
+// Calling async / await in parallel
+
+// In the previous example we are calling await twice, but each time we are waiting for one second(total 2 seconds).
+// Instead we can parallelize it since a and b are not dependent on each other using Promise.all
+
+// Async functions themselves return a Promise
+async function doubleAndAdd2(a, b) {
+  // Notice that I'm using Promise.all and array destructuring
+  [a, b] = await Promise.all([doubleAfter1Sec(a), doubleAfter1Sec(b)]);
+  return a + b;
+}
+
+// Usage
+
+doubleAndAdd2(1,2)
+  .then(c => console.log(c));
+// Prints
+// 6 (but takes one second due to parallelisation)
+
+// Error handling async/await functions
+
+// There are various ways to handle errors when using async await
+
+// Option 1 — Use try catch within the function
+
+async function doubleAndAdd3(a, b) {
+  try {
+    a = await doubleAfter1Sec2(a);
+    b = await doubleAfter1Sec2(b);
+  } catch (err) {
+    return NaN; 
+    // return something
+  }
+  return (a + b); 
+}
+
+// Usage
+doubleAndAdd3('one', 2).then(console.log);
+doubleAndAdd3(1,3).then(console.log);
+
+function doubleAfter1Sec2(param) {
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      let val = 2 * param;
+      isNaN(val) ? reject(NaN) : resolve(val);
+    }, 1000);
+  });
+}
+
+// prints
+// NaN
+// 8
+
+// Option 2 — Catch every await expression
+// Since every await expression returns a Promise, you can catch
+// errors on each line as shown below.
+
+//Option 2 - *Catch* errors on  every await line
+//as each await expression is a Promise in itself
+async function doubleAndAdd4(a, b) {
+  a = await doubleAfter1Sec3(a).catch(e => console.log('"a" is NaN')); // 👈
+  b = await doubleAfter1Sec3(b).catch(e => console.log('"b" is NaN')); // 👈
+  if (!a || !b) {
+    return NaN;
+  }
+  return a + b;
+}
+
+// 🚀 Usage:
+doubleAndAdd4('one', 2).then(console.log); 
+// NaN  and logs:  "a" is NaN
+doubleAndAdd4(1, 2).then(console.log); 
+// 6
+
+function doubleAfter1Sec3(param) {
+  return new Promise((resolve, reject) => {
+    setTimeout(function () {
+      let val = param * 2;
+      isNaN(val) ? reject(NaN) : resolve(val);
+    }, 1000);
+  });
+}
+
+// Option 3 — Catch the entire async - await function
+// Dont do anything but handle outside the function
+// since async / await returns a promise, we can catch the whole function's error
+async function doubleAndAdd5(a, b) {
+  a = await doubleAfter1Sec4(a);
+  b = await doubleAfter1Sec4(b);
+  return a + b;
+}
+
+// 🚀 Usage:
+doubleAndAdd5('one', 2)
+  .then(console.log)
+  .catch(console.log);  // 👈👈🏼<------- use "catch"
+
+function doubleAfter1Sec4(param) {
+  return new Promise((resolve, reject) => {
+    setTimeout(function () {
+      let val = param * 2;
+      isNaN(val) ? reject(NaN) : resolve(val);
+    }, 1000);
+  });
+}
+
+// 9. Shared memory and atomics
+console.log(chalk.green('\n9. Shared memory and atomics\n'));
+
+// This is a huge, pretty advanced feature and is a core enhancement to JS engines.
+
+// The main idea is to bring some sort of multi - threading feature to JavaScript so that JS developers 
+// can write high - performance, concurrent programs in the future by allowing to manage memory by themselves
+// instead of letting JS engine manage memory.
+
+// This is done by a new type of a global object called SharedArrayBuffer that essentially stores data in a shared memory space. 
+// So this data can be shared between the main JS thread and web - worker threads.
+
+// Until now, if we want to share data between the main JS thread and web - workers, we had to copy the data
+// and send it to the other thread using postMessage. Not anymore!
+
+// You simply use SharedArrayBuffer and the data is instantly accessible by both the main thread and multiple
+// web - worker threads.
+
+// But sharing memory between threads can cause race conditions. To help avoid race conditions, 
+// the “Atomics” global object is introduced. Atomics provides various methods to lock the shared memory when a
+// thread is using its data. It also provides methods to update such data in that shared memory safely.
+
+// The recommendation is to use this feature via some library, but right now there are no libraries built 
+// on top of this feature.
+
+
+// 10. Tagged Template literal restriction removed
+console.log(chalk.green('\n10. Tagged Template literal restriction removed\n'));
+
+// In ES2015+, there is a feature called a tagged template literal that allows developers to customize how strings are interpolated.
+// For example, in the standard way strings are interpolated like below.
+
+// Standard string literal interpolation
+const firstName = 'Harshit';
+const fullName = `Hello! ${firstName} Kaushik`;
+
+console.log('fullName: ' + fullName);
+// Hello! Harshit Kaushik
+
