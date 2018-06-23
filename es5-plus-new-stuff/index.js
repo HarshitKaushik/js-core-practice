@@ -482,3 +482,218 @@ const fullName = `Hello! ${firstName} Kaushik`;
 console.log('fullName: ' + fullName);
 // Hello! Harshit Kaushik
 
+// In the tagged literal, you can write a function to receive the hardcoded parts of the string literal, for example[‘Hello ‘, ‘!’ ],
+// and the replacement variables, for example, ['Raja'], as parameters into a custom function (for example greet), and return whatever 
+// you want from that custom function.
+
+// The below example shows that our custom “Tag” function greet appends time of the day like “Good Morning!” “Good afternoon” 
+// and so on depending on the time of the day to the string literal and returns a custom string.
+
+//A "Tag" function returns a custom string literal.
+//In this example, greet calls timeGreet() to append Good //Morning/Afternoon/Evening depending on the time of the day.
+
+function greet(hardCodedPartsArray, ...replacementPartsArray) {
+  console.log(hardCodedPartsArray); 
+  console.log(replacementPartsArray); 
+  let str = '';
+  hardCodedPartsArray.forEach((string, i) => {
+    if (i < replacementPartsArray.length) {
+      str += `${string} ${replacementPartsArray[i] || ''}`;
+    } else {
+      str += `${string} ${timeGreet()}`; //<-- append Good morning/afternoon/evening here
+    }
+  });
+  return str;
+}
+//🚀Usage:
+const firstNameObj = 'Raja';
+const greetings = greet`Hello ${firstNameObj}!`;  //👈🏼<-- Tagged literal
+console.log(greetings); //'Hello  Raja! Good Morning!' 🔥
+function timeGreet() {
+  const hr = new Date().getHours();
+  return hr < 12
+    ? 'Good Morning!'
+    : hr < 18 ? 'Good Afternoon!' : 'Good Evening!';
+}
+
+// ⚠️The problem with Tagged String literal
+
+// The problem is that ES2015 and ES2016 specs doesn’t allow using escape characters like “\u” (unicode), “\x”(hexadecimal) 
+// unless they look exactly like`\u00A9` or \u{ 2F804 } or \xA9.
+
+// So if you have a Tagged function that internally uses some other domain’s rules (like Terminal’s rules),
+// that may need to use \ubla123abla that doesn’t look like \u0049 or \u{ @F804}, then you would get a syntax error.
+
+// In ES2018, the rules are relaxed to allow such seemingly invalid escape characters as long as the Tagged function returns the values in an object with a “cooked” property (where invalid characters are “undefined”), and then a “raw” property (with whatever you want).
+
+// function myTagFunc(str) {
+//   return { "cooked": "undefined", "raw": str.raw[0] }
+// }
+
+// var str = myTagFunc`hi \ubla123abla`; //call myTagFunc
+
+// str // { cooked: "undefined", raw: "hi \\unicode" }
+
+// 11. “dotall” flag for Regular expression
+console.log(chalk.green('\n11. “dotall” flag for Regular expression\n'));
+
+// Currently in RegEx, although the dot(“.”) is supposed to match a single character, it doesn’t match new line characters like \n \r \f etc.
+
+// Before
+console.log('/first.second/.test(\'first\nsecond\')' + /first.second/.test('first\nsecond')); //false
+// PRINTS
+// /first.second/.test('first
+// second')false
+
+// This enhancement makes it possible for the dot operator to match any single character. In order to ensure this doesn’t break anything,
+//  we need to use \s flag when we create the RegEx for this to work.
+
+//ECMAScript 2018
+console.log('There inside: ' + /first.second/s.test('first\nsecond'));  //true   Notice: /s
+
+// 12. RegExp Named Group Captures 🔥
+console.log(chalk.green('\n12. RegExp Named Group Captures 🔥\n'));
+
+// This enhancement brings a useful RegExp feature from other languages like Python, Java and so on called “Named Groups.” 
+// This feature allows developers writing RegExp to provide names (identifiers) in the format(?<name>...) for different parts of the group in the RegExp. 
+// They can then use that name to grab whichever group they need with ease.
+
+// 12.1 Basic Named group example
+
+// BEFORE
+let regex1 = /(\d{4})-(\d{2})-(\d{2})/;
+let result1 = regex1.exec('2015-01-02');
+console.log(result1);
+// ['2015-01-02', '2015', '01', '02', index: 0, input: '2015-01-02']
+
+// AFTER
+
+// let regex2 = /(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})/u;
+// let result2 = regex2.exec('2015-01-02');
+// console.log(result2);
+// Does not work in Node version v9.3.0
+// Prints
+// ['2015-01-02', '2015', '01', '02', index:0, input '2015-01-02',
+// groups: {year: '2015', month: '01', day: '02' }
+// ]
+
+// Say you want to know the year, you can do
+// console.log(result2.groups.year);
+
+// Reference link: https://github.com/tc39/proposal-regexp-named-groups
+
+// 12.2 Using Named groups inside regex itself
+
+// We can use the \k < group name > format to back reference the group within the regex itself.The following example shows how it works.
+
+// let sameWords = /(?<fruit>apple|orange)==\k<fruit>/u;
+
+// sameWords.test('apple==apple'); //true
+// sameWords.test('orange==orange'); //true
+// sameWords.test('apple==orange'); //true
+
+// 12.3 Using named groups in String.prototype.replace
+
+// The named group feature is now baked into String’s replace instance method. So we can easily swap words in the string.
+
+// For example, change “firstName, lastName” to “lastName, firstName”.
+
+// let regex3 = /(?<firstName>[A-Za-z]+)(?<lastName>[A-Za-z]+$)/u;
+
+// 'Harshit Kaushik'.replace(regex3, '$<firstName>, <$lastName>');
+
+// PRINTS
+// "Kaushik, Harshit"
+
+// 13. Rest properties for Objects
+console.log(chalk.green('\n13. Rest properties for Objects 🔥\n'));
+
+// Rest operator ... (three dots) allows us to extract Object properties that are not already extracted.
+
+let {id, name, ...remaining} = {
+  id: 699223,
+  name: 'Harshit',
+  lastName: 'Kaushik',
+  company: 'Kwench', 
+  city: 'Ghaziabad'
+};
+
+console.log(id);
+console.log(name);
+console.log(remaining);
+// Prints output
+// 699223
+// Harshit
+// { lastName: 'Kaushik', company: 'Kwench', city: 'Ghaziabad' }
+
+// Even better, you can remove unwanted items! 🔥🔥
+
+// Say you need to remove city from the object
+let { city, ...cleanObj } = {
+  id: 699223,
+  name: 'Harshit',
+  lastName: 'Kaushik',
+  company: 'Kwench',
+  city: 'Ghaziabad'
+};
+
+console.log(cleanObj);
+// PRINTS
+// {
+//   id: 699223,
+//   name: 'Harshit',
+//   lastName: 'Kaushik',
+//   company: 'Kwench'
+// }
+
+// 14. Spread properties for Objects
+console.log(chalk.green('\n14. Spread properties for Objects 🔥\n'));
+
+// Spread properties also look just like rest properties with three dots ...but the difference is that you use spread
+//  to create(restructure) new objects.
+
+// Tip: the spread operator is used in the right side of the equals sign. The rest are used in the left - side of the equals sign.
+
+// Merge person and account object using spread operator
+const person = {name: 'Harshit', lastName: 'Kaushik'};
+const account = {balance: 100};
+const personAndAccount = {...person, ...account};
+
+console.log(personAndAccount);
+// PRINTS
+// { name: 'Harshit', lastName: 'Kaushik', balance: 100 }
+
+// AWESOME!
+
+// 15. Promise.prototype.finally()
+console.log(chalk.green('\n15. Promise.prototype.finally()\n'));
+
+// finally() is a new instance method that was added to Promise.
+// The main idea is to allow running a callback after either resolve or reject to help clean things up.The finally callback is called without any value and is always executed no matter what.
+
+// Let’s look at various cases.
+
+// Resolve case
+
+// let started = true;
+
+// let myPromise = new Promise(function(resolve, reject) {
+//   resolve('all good');
+// }).then(val => {
+//   console.log(val); // logs 'all good'
+// }).catch(e => {
+//   console.log(e); // Skipped
+// }).finally(() => {
+//   console.log('This function is never executed');
+//   started = false; // cleanup
+// });
+
+// Stage 4 ES18 code. Not running in Node v9.3
+
+// Further important new features coming to Javascript
+
+// 1. .finally() handler in Promise
+// 2. Aysnchronous code iteration by a new for-await-for loop
+
+// For reference, read excellent article
+// https://medium.freecodecamp.org/here-are-examples-of-everything-new-in-ecmascript-2016-2017-and-2018-d52fa3b5a70e
